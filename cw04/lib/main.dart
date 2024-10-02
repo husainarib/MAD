@@ -133,6 +133,22 @@ class TaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
+    return ListTile(
+      leading: Checkbox(
+        value: task.status,
+        onChanged: (value) => toggle(),
+      ),
+      title: Text(
+        task.name,
+        style: TextStyle(
+          decoration: task.status ? TextDecoration.lineThrough : null,
+        ),
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete),
+        color: Colors.red,
+        onPressed: delete,
+      ),
+    );
   }
 }
