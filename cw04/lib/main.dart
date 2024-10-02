@@ -57,6 +57,82 @@ class _TaskListScreen extends State<TaskListScreen> {
       tasks.removeAt(index);
     });
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Task Manager'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter task',
+                      filled: true,
+                      fillColor: Color.fromARGB(255, 215, 229, 235),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    if (controller.text.isNotEmpty) {
+                      addTask(controller.text);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Add'),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                return TaskItem(
+                  task: tasks[index],
+                  toggle: () => checkTask(index),
+                  delete: () => deleteTask(index),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
+// displays a task with a checkbox to toggle its status and a delete button
+class TaskItem extends StatelessWidget {
+  final Task task;
+  final VoidCallback toggle;
+  final VoidCallback delete;
 
+  const TaskItem({
+    super.key,
+    required this.task,
+    required this.toggle,
+    required this.delete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    
+  }
+}
