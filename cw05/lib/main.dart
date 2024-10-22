@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 import 'dart:math';
 
 void main() {
@@ -23,7 +25,104 @@ class _FishAquariumState extends State<FishAquarium> {
   final List<Fish> fishList = [];
   double fishSpeed = 1.0;
   Color selectedColor = Colors.blue;
+  late Database database;
   Random random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _initDatabase();
+  }
+
+  // Initialize the SQLite database
+  Future<void> _initDatabase() async {
+    database = await openDatabase(
+      join(await getDatabasesPath(), 'fish_aquarium.db'),
+      onCreate: (db, version) {
+        return db.execute(
+          "CREATE TABLE settings(id INTEGER PRIMARY KEY, fish_count INTEGER, speed REAL, color TEXT)",
+        );
+      },
+      version: 1,
+    );
+    _loadSettings();
+  }
+
+  // Load settings from SQLite
+  Future<void> _loadSettings() async {
+    final List<Map<String, dynamic>> settings =
+        await database.query('settings', limit: 1);
+    if (settings.isNotEmpty) {
+      setState(() {
+        fishSpeed = settings[0]['speed'];
+        selectedColor = _colorFromString(settings[0]['color']);
+        for (int i = 0; i < settings[0]['fish_count']; i++) {
+          _addFish(loadFromDB: true);
+        }
+      });
+    }
+  }
+
+  // Save settings to SQLite
+  Future<void> _saveSettings() async {
+    await database.insert(
+      'settings',
+      {
+        'fish_count': fishList.length,
+        'speed': fishSpeed,
+        'color': _colorToString(selectedColor),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  // Convert color to string
+  String _colorToString(Color color) {
+    if (color == Colors.blue) return 'blue';
+    if (color == Colors.red) return 'red';
+    if (color == Colors.green) return 'green';
+    if (color == Colors.yellow) return 'yellow';
+    return 'blue';
+  }
+
+  // Convert string to color
+  Color _colorFromString(String color) {
+    switch (color) {
+      case 'red':
+        return Colors.red;
+      case 'green':
+        return Colors.green;
+      case 'yellow':
+        return Colors.yellow;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  // Add Fish Method
+  void _addFish({bool loadFromDB = false}) {
+    if (fishList.length < 10) {
+      setState(() {
+        fishList.add(Fish(
+          color: selectedColor,
+          speed: fishSpeed,
+        ));
+      });
+      if (!loadFromDB) {
+        _saveSettings();
+      }
+    }
+  }
+
+  // Remove Fish method
+  void _removeFish() {
+    if (fishList.isNotEmpty) {
+      setState(() {
+        fishList.removeLast();
+      });
+      _saveSettings();
+    }
+  }
 
   void _updateFishSpeed() {
     setState(() {
@@ -34,27 +133,7 @@ class _FishAquariumState extends State<FishAquarium> {
         );
       }
     });
-  }
-
-  // Add Fish Method
-  void _addFish() {
-    if (fishList.length < 10) {
-      setState(() {
-        fishList.add(Fish(
-          color: selectedColor,
-          speed: fishSpeed,
-        ));
-      });
-    }
-  }
-
-  // Remove Fish method
-  void _removeFish() {
-    if (fishList.isNotEmpty) {
-      setState(() {
-        fishList.removeLast();
-      });
-    }
+    _saveSettings();
   }
 
   @override
@@ -85,18 +164,18 @@ class _FishAquariumState extends State<FishAquarium> {
                 // Button to add a new fish
                 ElevatedButton(
                   onPressed: _addFish,
-                  child: Text('Add Fish'),
+                  child: const Text('Add Fish'),
                 ),
                 const SizedBox(height: 10),
                 // Button to remove the last fish
                 ElevatedButton(
                   onPressed: _removeFish,
-                  child: Text('Remove Fish'),
+                  child: const Text('Remove Fish'),
                 ),
-                // Slider for Spped
+                // Slider for Speed
                 Row(
                   children: [
-                    Text('Fish Speed:'),
+                    const Text('Fish Speed:'),
                     Expanded(
                       child: Slider(
                         value: fishSpeed,
@@ -142,10 +221,17 @@ class _FishAquariumState extends State<FishAquarium> {
                       onChanged: (value) {
                         setState(() {
                           selectedColor = value!;
+                          _saveSettings();
                         });
                       },
                     ),
                   ],
+                ),
+                const SizedBox(height: 20),
+                // Button to save settings
+                ElevatedButton(
+                  onPressed: _saveSettings,
+                  child: const Text('Save Settings'),
                 ),
               ],
             ),
