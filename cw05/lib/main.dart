@@ -19,32 +19,42 @@ class FishAquarium extends StatefulWidget {
   _FishAquariumState createState() => _FishAquariumState();
 }
 
-class _FishAquariumState extends State<FishAquarium>
-    with SingleTickerProviderStateMixin {
-  final List<Widget> fishList = [];
+class _FishAquariumState extends State<FishAquarium> {
+  final List<Fish> fishList = [];
   double fishSpeed = 1.0;
   Color selectedColor = Colors.blue;
-  int fishCount = 0;
   Random random = Random();
 
+  void _updateFishSpeed() {
+    setState(() {
+      for (var i = 0; i < fishList.length; i++) {
+        fishList[i] = Fish(
+          color: fishList[i].color,
+          speed: fishSpeed,
+        );
+      }
+    });
+  }
+
+  // Add Fish Method
   void _addFish() {
     if (fishList.length < 10) {
       setState(() {
-        fishList.add(Fish(color: selectedColor));
+        fishList.add(Fish(
+          color: selectedColor,
+          speed: fishSpeed,
+        ));
       });
     }
   }
 
+  // Remove Fish method
   void _removeFish() {
     if (fishList.isNotEmpty) {
       setState(() {
         fishList.removeLast();
       });
     }
-  }
-
-  void saveSettings() {
-    // TODO SAVE SETTING
   }
 
   @override
@@ -67,7 +77,7 @@ class _FishAquariumState extends State<FishAquarium>
               children: fishList,
             ),
           ),
-          // Control panel
+          // Button and Slider
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Column(
@@ -77,13 +87,13 @@ class _FishAquariumState extends State<FishAquarium>
                   onPressed: _addFish,
                   child: Text('Add Fish'),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(height: 10),
                 // Button to remove the last fish
                 ElevatedButton(
                   onPressed: _removeFish,
                   child: Text('Remove Fish'),
                 ),
-                // Slider to adjust fish speed
+                // Slider for Spped
                 Row(
                   children: [
                     Text('Fish Speed:'),
@@ -96,6 +106,7 @@ class _FishAquariumState extends State<FishAquarium>
                         onChanged: (value) {
                           setState(() {
                             fishSpeed = value;
+                            _updateFishSpeed();
                           });
                         },
                       ),
@@ -136,11 +147,6 @@ class _FishAquariumState extends State<FishAquarium>
                     ),
                   ],
                 ),
-                // Save Settings button
-                ElevatedButton(
-                  onPressed: saveSettings,
-                  child: Text('Save Settings'),
-                ),
               ],
             ),
           ),
@@ -152,7 +158,9 @@ class _FishAquariumState extends State<FishAquarium>
 
 class Fish extends StatefulWidget {
   final Color color;
-  Fish({required this.color});
+  final double speed;
+
+  Fish({required this.color, required this.speed});
 
   @override
   _FishState createState() => _FishState();
@@ -160,8 +168,6 @@ class Fish extends StatefulWidget {
 
 class _FishState extends State<Fish> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _xAnimation;
-  late Animation<double> _yAnimation;
   double xPosition = 0.0;
   double yPosition = 0.0;
   bool movingRight = true;
@@ -171,7 +177,6 @@ class _FishState extends State<Fish> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    // Random starting position
     xPosition = random.nextDouble() * 250;
     yPosition = random.nextDouble() * 250;
 
@@ -180,14 +185,20 @@ class _FishState extends State<Fish> with SingleTickerProviderStateMixin {
       vsync: this,
     )..repeat();
 
-    _xAnimation = Tween<double>(begin: 0, end: 1).animate(_controller)
-      ..addListener(() {
-        setState(() {
-          _moveFish();
-        });
+    _controller.addListener(() {
+      setState(() {
+        _moveFish();
       });
+    });
   }
 
+  void updateSpeed(double newSpeed) {
+    _controller.duration = Duration(seconds: (5 / newSpeed).round());
+    _controller.reset();
+    _controller.repeat();
+  }
+
+  // Method to move fish
   void _moveFish() {
     // Move horizontally
     if (movingRight) {
