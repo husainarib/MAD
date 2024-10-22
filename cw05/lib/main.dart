@@ -27,9 +27,20 @@ class _FishAquariumState extends State<FishAquarium>
   int fishCount = 0;
   Random random = Random();
 
-  // Add fish button logic.
-  void addFish() {
-    // TODO ADD FISH BUTTON LOGIC
+  void _addFish() {
+    if (fishList.length < 10) {
+      setState(() {
+        fishList.add(Fish(color: selectedColor));
+      });
+    }
+  }
+
+  void _removeFish() {
+    if (fishList.isNotEmpty) {
+      setState(() {
+        fishList.removeLast();
+      });
+    }
   }
 
   void saveSettings() {
@@ -63,8 +74,14 @@ class _FishAquariumState extends State<FishAquarium>
               children: [
                 // Button to add a new fish
                 ElevatedButton(
-                  onPressed: addFish,
+                  onPressed: _addFish,
                   child: Text('Add Fish'),
+                ),
+                const SizedBox(width: 10),
+                // Button to remove the last fish
+                ElevatedButton(
+                  onPressed: _removeFish,
+                  child: Text('Remove Fish'),
                 ),
                 // Slider to adjust fish speed
                 Row(
@@ -133,19 +150,90 @@ class _FishAquariumState extends State<FishAquarium>
   }
 }
 
-class Fish extends StatelessWidget {
+class Fish extends StatefulWidget {
   final Color color;
-
   Fish({required this.color});
 
   @override
+  _FishState createState() => _FishState();
+}
+
+class _FishState extends State<Fish> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _xAnimation;
+  late Animation<double> _yAnimation;
+  double xPosition = 0.0;
+  double yPosition = 0.0;
+  bool movingRight = true;
+  bool movingDown = true;
+  final Random random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    // Random starting position
+    xPosition = random.nextDouble() * 250;
+    yPosition = random.nextDouble() * 250;
+
+    _controller = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat();
+
+    _xAnimation = Tween<double>(begin: 0, end: 1).animate(_controller)
+      ..addListener(() {
+        setState(() {
+          _moveFish();
+        });
+      });
+  }
+
+  void _moveFish() {
+    // Move horizontally
+    if (movingRight) {
+      xPosition += random.nextDouble() * 2;
+      if (xPosition >= 270) {
+        movingRight = false;
+      }
+    } else {
+      xPosition -= random.nextDouble() * 2;
+      if (xPosition <= 0) {
+        movingRight = true;
+      }
+    }
+
+    // Move vertically
+    if (movingDown) {
+      yPosition += random.nextDouble() * 2;
+      if (yPosition >= 270) {
+        movingDown = false;
+      }
+    } else {
+      yPosition -= random.nextDouble() * 2;
+      if (yPosition <= 0) {
+        movingDown = true;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
+    return Positioned(
+      left: xPosition,
+      top: yPosition,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: widget.color,
+        ),
       ),
     );
   }
