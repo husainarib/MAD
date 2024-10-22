@@ -1,125 +1,152 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 void main() {
-  runApp(const MyApp());
+  runApp(FishAquariumApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
+class FishAquariumApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: FishAquarium(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class FishAquarium extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _FishAquariumState createState() => _FishAquariumState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _FishAquariumState extends State<FishAquarium>
+    with SingleTickerProviderStateMixin {
+  final List<Widget> fishList = [];
+  double fishSpeed = 1.0;
+  Color selectedColor = Colors.blue;
+  int fishCount = 0;
+  Random random = Random();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  // Add fish button logic.
+  void addFish() {
+    // TODO ADD FISH BUTTON LOGIC
+  }
+
+  void saveSettings() {
+    // TODO SAVE SETTING
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('Fish Aquarium'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: Column(
+        children: [
+          // Aquarium container
+          Container(
+            width: 300,
+            height: 300,
+            decoration: BoxDecoration(
+              color: Colors.lightBlueAccent,
+              border: Border.all(color: Colors.black),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            child: Stack(
+              children: fishList,
             ),
-          ],
-        ),
+          ),
+          // Control panel
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                // Button to add a new fish
+                ElevatedButton(
+                  onPressed: addFish,
+                  child: Text('Add Fish'),
+                ),
+                // Slider to adjust fish speed
+                Row(
+                  children: [
+                    Text('Fish Speed:'),
+                    Expanded(
+                      child: Slider(
+                        value: fishSpeed,
+                        min: 0.5,
+                        max: 5.0,
+                        divisions: 9,
+                        onChanged: (value) {
+                          setState(() {
+                            fishSpeed = value;
+                          });
+                        },
+                      ),
+                    ),
+                    Text('${fishSpeed.toStringAsFixed(1)}x'),
+                  ],
+                ),
+                // Color selector
+                Row(
+                  children: [
+                    const Text('Fish Color:'),
+                    SizedBox(width: 10),
+                    DropdownButton<Color>(
+                      value: selectedColor,
+                      items: const [
+                        DropdownMenuItem(
+                          value: Colors.blue,
+                          child: Text('Blue'),
+                        ),
+                        DropdownMenuItem(
+                          value: Colors.red,
+                          child: Text('Red'),
+                        ),
+                        DropdownMenuItem(
+                          value: Colors.green,
+                          child: Text('Green'),
+                        ),
+                        DropdownMenuItem(
+                          value: Colors.yellow,
+                          child: Text('Yellow'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedColor = value!;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                // Save Settings button
+                ElevatedButton(
+                  onPressed: saveSettings,
+                  child: Text('Save Settings'),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+}
+
+class Fish extends StatelessWidget {
+  final Color color;
+
+  Fish({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+      ),
     );
   }
 }
