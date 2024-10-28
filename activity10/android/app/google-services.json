@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1034163021351",
+    "project_id": "activity-10-54e2a",
+    "storage_bucket": "activity-10-54e2a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1034163021351:android:b4ed11a192cf5c799e9002",
+        "android_client_info": {
+          "package_name": "com.gsu.activity10"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqj_1iAIz8x74g3r_t6wEIaxCrOCdwqyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
