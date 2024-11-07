@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(MyApp());
 }
 
@@ -18,15 +23,35 @@ class MyApp extends StatelessWidget {
 }
 
 class Task {
+  String id;
   String name;
   bool isComplete;
   Map<String, List<Map<String, dynamic>>> nestedTasks;
 
   Task({
+    required this.id,
     required this.name,
     this.isComplete = false,
     required this.nestedTasks,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'isComplete': isComplete,
+      'nestedTasks': nestedTasks,
+    };
+  }
+
+  static Task fromMap(Map<String, dynamic> map, String id) {
+    return Task(
+      id: id,
+      name: map['name'],
+      isComplete: map['isComplete'],
+      nestedTasks: Map<String, List<Map<String, dynamic>>>.from(map['nestedTasks']),
+    );
+  }
 }
 
 class TaskListScreen extends StatefulWidget {
@@ -37,24 +62,27 @@ class TaskListScreen extends StatefulWidget {
 class _TaskListScreenState extends State<TaskListScreen> {
   final TextEditingController _taskController = TextEditingController();
   final TextEditingController _subTaskController = TextEditingController();
-  List<Task> _tasks = [];
 
   void _addTask() {
     if (_taskController.text.isNotEmpty) {
-      setState(() {
-        _tasks.add(Task(
-          name: _taskController.text,
-          nestedTasks: {},
-        ));
-      });
+      final task = Task(
+        id: FirebaseFirestore.instance.collection('tasks').doc().id,
+        name: _taskController.text,
+        nestedTasks: {},
+      );
+      FirebaseFirestore.instance.collection('tasks').doc(task.id).set(task.toMap());
       _taskController.clear();
     }
   }
 
-  void _deleteTask(int index) {
-    setState(() {
-      _tasks.removeAt(index);
+  void _toggleTaskCompletion(Task task) {
+    FirebaseFirestore.instance.collection('tasks').doc(task.id).update({
+      'isComplete': !task.isComplete,
     });
+  }
+
+  void _deleteTask(String taskId) {
+    FirebaseFirestore.instance.collection('tasks').doc(taskId).delete();
   }
 
   void _addSubTask(Task task, String day, String time) {
@@ -66,19 +94,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
         'time': time,
         'tasks': [_subTaskController.text],
       });
+      FirebaseFirestore.instance
+          .collection('tasks')
+          .doc(task.id)
+          .update({'nestedTasks': task.nestedTasks});
       _subTaskController.clear();
-    });
-  }
-
-  void _deleteSubTask(Task task, String day, int timeIndex, String subTask) {
-    setState(() {
-      task.nestedTasks[day]![timeIndex]['tasks'].remove(subTask);
-      if (task.nestedTasks[day]![timeIndex]['tasks'].isEmpty) {
-        task.nestedTasks[day]!.removeAt(timeIndex);
-      }
-      if (task.nestedTasks[day]!.isEmpty) {
-        task.nestedTasks.remove(day);
-      }
     });
   }
 
@@ -108,108 +128,114 @@ class _TaskListScreenState extends State<TaskListScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: _tasks.length,
-              itemBuilder: (context, index) {
-                final task = _tasks[index];
-                return ExpansionTile(
-                  title: Row(
-                    children: [
-                      Checkbox(
-                        value: task.isComplete,
-                        onChanged: (value) {
-                          setState(() {
-                            task.isComplete = value!;
-                          });
-                        },
-                      ),
-                      Expanded(child: Text(task.name)),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => _deleteTask(index),
-                      ),
-                    ],
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance.collection('tasks').snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (!snapshot.hasData) return CircularProgressIndicator();
+                final tasks = snapshot.data!.docs.map((doc) {
+                  return Task.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+                }).toList();
+
+                return ListView.builder(
+                  itemCount: tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    return ExpansionTile(
+                      title: Row(
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _subTaskController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Enter sub-task name',
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.add),
-                                onPressed: () {
-                                  _showAddSubTaskDialog(task);
-                                },
-                              ),
-                            ],
+                          Checkbox(
+                            value: task.isComplete,
+                            onChanged: (value) => _toggleTaskCompletion(task),
                           ),
-                          if (task.nestedTasks.isNotEmpty)
-                            for (var day in task.nestedTasks.keys)
-                              ExpansionTile(
-                                title: Text(day,
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold)),
-                                children: [
-                                  for (var timeSlotIndex = 0;
-                                      timeSlotIndex <
-                                          task.nestedTasks[day]!.length;
-                                      timeSlotIndex++)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 4.0),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                              task.nestedTasks[day]![
-                                                  timeSlotIndex]['time'],
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600)),
-                                          ...task
-                                              .nestedTasks[day]![timeSlotIndex]
-                                                  ['tasks']
-                                              .map<Widget>((subTask) {
-                                            return ListTile(
-                                              title: Text(subTask),
-                                              leading: Checkbox(
-                                                value: false,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    // TODO Mark sub-task as complete
-                                                  });
-                                                },
-                                              ),
-                                              trailing: IconButton(
-                                                icon: Icon(Icons.delete),
-                                                onPressed: () {
-                                                  _deleteSubTask(task, day,
-                                                      timeSlotIndex, subTask);
-                                                },
-                                              ),
-                                            );
-                                          }).toList(),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
+                          Expanded(child: Text(task.name)),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () => _deleteTask(task.id),
+                          ),
                         ],
                       ),
-                    ),
-                  ],
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _subTaskController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Enter sub-task name',
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.add),
+                                    onPressed: () {
+                                      _showAddSubTaskDialog(task);
+                                    },
+                                  ),
+                                ],
+                              ),
+                              if (task.nestedTasks.isNotEmpty)
+                                for (var day in task.nestedTasks.keys)
+                                  ExpansionTile(
+                                    title: Text(day,
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold)),
+                                    children: [
+                                      for (var timeSlotIndex = 0;
+                                          timeSlotIndex <
+                                              task.nestedTasks[day]!.length;
+                                          timeSlotIndex++)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 4.0),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                  task.nestedTasks[day]![
+                                                      timeSlotIndex]['time'],
+                                                  style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w600)),
+                                              ...task
+                                                  .nestedTasks[day]![timeSlotIndex]
+                                                      ['tasks']
+                                                  .map<Widget>((subTask) {
+                                                return ListTile(
+                                                  title: Text(subTask),
+                                                  leading: Checkbox(
+                                                    value: false,
+                                                    onChanged: (value) {
+                                                      setState(() {
+                                                        // Mark sub-task as complete
+                                                      });
+                                                    },
+                                                  ),
+                                                  trailing: IconButton(
+                                                    icon: Icon(Icons.delete),
+                                                    onPressed: () {
+                                                      _deleteSubTask(task, day,
+                                                          timeSlotIndex, subTask);
+                                                    },
+                                                  ),
+                                                );
+                                              }).toList(),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),
@@ -257,18 +283,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
               },
               items: [
                 '9 am - 10 am',
-                '11 am - 12 pm',
-                '12 pm - 1 pm',
-                '1 pm - 2 pm',
-                '2 pm - 3 pm',
+                '12 pm - 2 pm',
                 '3 pm - 4 pm',
-                '4 pm - 5 pm',
-                '5 pm - 6 pm',
-                '6 pm - 7 pm',
-                '7 pm - 8 pm',
-                '8 pm - 9 pm',
-                '9 pm - 10 pm',
-                '10 pm - 11 pm',
               ]
                   .map((time) => DropdownMenuItem(
                         value: time,
@@ -295,5 +311,21 @@ class _TaskListScreenState extends State<TaskListScreen> {
         ],
       ),
     );
+  }
+
+  void _deleteSubTask(Task task, String day, int timeIndex, String subTask) {
+    setState(() {
+      task.nestedTasks[day]![timeIndex]['tasks'].remove(subTask);
+      if (task.nestedTasks[day]![timeIndex]['tasks'].isEmpty) {
+        task.nestedTasks[day]!.removeAt(timeIndex);
+      }
+      if (task.nestedTasks[day]!.isEmpty) {
+        task.nestedTasks.remove(day);
+      }
+      FirebaseFirestore.instance
+          .collection('tasks')
+          .doc(task.id)
+          .update({'nestedTasks': task.nestedTasks});
+    });
   }
 }
