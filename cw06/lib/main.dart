@@ -49,34 +49,6 @@ class _HomePageState extends State<HomePage> {
 //     }
 //   }
 
-  Future<User?> _sign(String email, String password) async {
-    try {
-      UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
-      return userCredential.user;
-    } catch (e) {
-      // ERROR CHECKING
-      print("Error signing in: $e");
-      return null;
-    }
-  }
-
-  Future<User?> _register(String email, String password) async {
-    try {
-      UserCredential userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
-      return userCredential.user;
-    } catch (e) {
-      // ERROR CHECKING
-      print("Error registering: $e");
-      return null;
-    }
-  }
-
-  Future<void> signOut() async {
-    await FirebaseAuth.instance.signOut();
-  }
-
   Future<void> _addTask(String taskName) async {
     if (taskName.isNotEmpty) {
       await _tasksCollection.add({
