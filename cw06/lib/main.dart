@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +48,34 @@ class _HomePageState extends State<HomePage> {
 //       print('Error writing to Firestore: $e');
 //     }
 //   }
+
+  Future<User?> _sign(String email, String password) async {
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+      return userCredential.user;
+    } catch (e) {
+      // ERROR CHECKING
+      print("Error signing in: $e");
+      return null;
+    }
+  }
+
+  Future<User?> _register(String email, String password) async {
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+      return userCredential.user;
+    } catch (e) {
+      // ERROR CHECKING
+      print("Error registering: $e");
+      return null;
+    }
+  }
+
+  Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
+  }
 
   Future<void> _addTask(String taskName) async {
     if (taskName.isNotEmpty) {
