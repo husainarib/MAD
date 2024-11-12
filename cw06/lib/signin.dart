@@ -49,10 +49,6 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
-  void _continueAsGuest() {
-    // TODO create method to handle
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,6 +58,8 @@ class _SignInScreenState extends State<SignInScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Text('Input your email and password and press register to start'),
+            SizedBox(height: 16),
             TextField(
               controller: _emailController,
               decoration: InputDecoration(labelText: "Email"),
@@ -80,10 +78,6 @@ class _SignInScreenState extends State<SignInScreen> {
             TextButton(
               onPressed: _register,
               child: Text("Register"),
-            ),
-            TextButton(
-              onPressed: _continueAsGuest,
-              child: Text("Continue as Guest"),
             ),
           ],
         ),
