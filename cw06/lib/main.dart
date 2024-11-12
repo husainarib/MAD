@@ -28,7 +28,6 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _user = FirebaseAuth.instance.currentUser;
 
-    // Listen for authentication changes
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
       setState(() {
         _user = user;
@@ -107,16 +106,28 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
+  // Sign out Method
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Task Manager'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _signOut,
+            tooltip: 'Sign Out',
+          ),
+        ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 // // TESTING FIREBASE CONNECTION

@@ -41,7 +41,9 @@ class _SignInScreenState extends State<SignInScreen> {
         password: _passwordController.text.trim(),
       );
       widget.onSignIn(userCredential.user);
-    } catch (e) {
+    }
+    // ERROR HANDLING
+    catch (e) {
       print("Error registering: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error registering: $e")),
@@ -58,8 +60,6 @@ class _SignInScreenState extends State<SignInScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Input your email and password and press register to start'),
-            SizedBox(height: 16),
             TextField(
               controller: _emailController,
               decoration: InputDecoration(labelText: "Email"),
@@ -79,6 +79,8 @@ class _SignInScreenState extends State<SignInScreen> {
               onPressed: _register,
               child: Text("Register"),
             ),
+            Text('If new: Input your email and password and press register to sign in'),
+            SizedBox(height: 16),
           ],
         ),
       ),
